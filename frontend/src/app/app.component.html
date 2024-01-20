@@ -1,0 +1,8 @@
+<!-- <app-file-uploader></app-file-uploader> -->
+@if(isMedia){
+  <app-media-player [fileDetails]="fileDetails"></app-media-player>
+}@else if(isDocument){
+  <app-viewer [fileDetails]="fileDetails"></app-viewer>
+}
+
+<router-outlet></router-outlet>

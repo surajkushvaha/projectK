@@ -1,0 +1,7 @@
+<div class="drop-container" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+    <p>Drag and drop files or folders here</p>
+    
+</div>
+<div #listing FileDragNDropDirective>
+</div>
+<input type="file" class="drop-container" id="filepicker" name="fileList" webkitdirectory multiple (change)="onChange($event)"/>

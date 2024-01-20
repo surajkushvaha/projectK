@@ -1,0 +1,13 @@
+<!-- @if(isVideo){
+<video controls>
+    <source [src]="sourceUrl" type="video/mp4" />
+</video>
+}@else {
+<figure>
+    <audio controls [src]="sourceUrl">
+    </audio>
+</figure>
+} -->
+<section style="height: 100%; width: 100%;">
+    <video [src]="fileDetails.url" width="100%" controls></video>
+</section>
