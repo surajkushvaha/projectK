@@ -65,7 +65,7 @@ loadDatabase();
 app.post('/upload', upload.array('files'), (req, res) => {
     const uploadedFiles = req.files;
     const filepaths = req.body.filepath;
-
+    console.log('Uploading',filepaths);
     if (!uploadedFiles || uploadedFiles.length === 0) {
         return res.status(400).json({ message: 'No files uploaded' });
     }
@@ -147,12 +147,13 @@ app.post('/upload', upload.array('files'), (req, res) => {
 
     return res.status(200).json({ message: message });
 });
-// const userRoutes = require('./src/routes/users');
-// const { addUser } = require('./src/controllers/usersController');
-// app.post('/api/users/', userRoutes);
 
+const userRoutes = require('./src/routes/usersDetails');
+const fileRoutes = require('./src/routes/filesDetails');
+const folderRoutes = require('./src/routes/folderDetails');
+app.use('/api/users', userRoutes);
+app.use('/api/files', fileRoutes);
+app.use('/api/folder', folderRoutes);
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
-
-// addUser({ username: "username" });

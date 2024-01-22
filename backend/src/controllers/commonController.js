@@ -1,9 +1,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const filedb = path.resolve(__dirname, '../../database/fileDetailsDB.json');
-const folderdb = path.resolve(__dirname, '../../database/folderDetailsDB.json');
-const usersdb = path.resolve(__dirname, '../../database/usersDetailsDB.json');
+const filedb = path.join(__dirname, '../../database/fileDetailsDB.json');
+const folderdb = path.join(__dirname, '../../database/folderDetailsDB.json');
+const usersdb = path.join(__dirname, '../../database/usersDetailsDB.json');
 
 const refreshDatabase = () => {
     try {
@@ -16,14 +16,14 @@ const refreshDatabase = () => {
         });
         return { success: true, message: 'Database refreshed successfully' };
     } catch (error) {
-        console.error('Error loading database:', error.message);
-        return { success: false, message: `Error loading database: ${error.message}` };
+        console.error('Error refreshing database:', error.message);
+        return { success: false, message: `Error refreshing database: ${error.message}` };
     }
 };
 
 const saveDatabase = (dbname, data) => {
     try {
-        const databasePath = whichDatabase(dbname);;
+        const databasePath = whichDatabase(dbname);
         fs.writeFileSync(databasePath, JSON.stringify(data, null, 2));
         return { success: true, message: 'Data saved to database successfully' };
     } catch (error) {
@@ -32,25 +32,28 @@ const saveDatabase = (dbname, data) => {
     }
 };
 
-
 const getDatabase = (dbname) => {
     try {
         const databasePath = whichDatabase(dbname);
-        return { success: true, message: 'Data saved to database successfully' , data:fs.readFileSync(databasePath, { encoding: 'utf8', flag: 'r' })};
+        const data = fs.readFileSync(databasePath, { encoding: 'utf8', flag: 'r' });
+        return { success: true, message: 'Data retrieved from database successfully', data };
     } catch (error) {
-        console.error('Error saving database:', error.message);
-        return { success: false, message: `Error saving database: ${error.message}` };
+        console.error('Error reading database:', error.message);
+        return { success: false, message: `Error reading database: ${error.message}` };
     }
 };
 
-const whichDatabase = (dbname)=>{
+const whichDatabase = (dbname) => {
     switch (dbname) {
         case 'filedb':
-            return filedb;  
+            return filedb;
         case 'folderdb':
             return folderdb;
         case 'usersdb':
             return usersdb;
-    } 
-}
-module.exports = [refreshDatabase, saveDatabase, getDatabase];
+        default:
+            throw new Error(`Unsupported database: ${dbname}`);
+    }
+};
+
+module.exports = { refreshDatabase, saveDatabase, getDatabase };

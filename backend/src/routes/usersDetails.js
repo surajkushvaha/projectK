@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-router.get('/getUserData', (req, res) => {
+const {addUser, getUserById, getUserList, isEmailExist, isUserUnique} = require('../controllers/usersDetailsController');
+
+router.get('/getUserList', (req, res) => {
     // Your code to handle GET /api/users
-    res.json({ message: 'Get all users' });
+    res.json({data: getUserList()});
 });
 
 router.post('/checkusername', (req, res) => {
