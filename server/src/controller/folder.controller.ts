@@ -1,12 +1,11 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { APP_CONSTANTS } from 'src/constants/app.constants';
-import { APIResponse, User } from 'src/interface/dbinterface';
+import { APIResponse } from 'src/interface/dbinterface';
 import { refreshDatabase } from 'src/middleware/common';
-import { logger } from 'src/middleware/logger';
 import { AuthService } from 'src/services/auth.service';
 
 @Controller()
-export class AuthController {
+export class FolderController {
   constructor(private readonly authService: AuthService) {}
 
   @Post(APP_CONSTANTS.PATH.LOGIN)
@@ -14,20 +13,18 @@ export class AuthController {
     if (body.email && body.password) {
       return this.authService.getLogin(body.email, body.password);
     }
-    logger.alert('Invalid request format.');
     return {
       success: false,
-      message: 'Invalid request format.',
+      message: 'Invalid request format',
     };
   }
 
   @Post(APP_CONSTANTS.PATH.SIGNUP)
-  signupApp(@Body() body: User): APIResponse {
+  signupApp(@Body() body: any): APIResponse {
     refreshDatabase();
     if (body.username && body.password && body.email) {
       return this.authService.createUser(body);
     }
-    logger.alert('Invalid input data format.');
     return {
       success: false,
       message: 'invalid input data format',

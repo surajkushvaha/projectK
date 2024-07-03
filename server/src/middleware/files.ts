@@ -1,118 +1,206 @@
-import { Files } from 'src/interface/dbinterface';
-import { refreshDatabase, getDatabase, saveDatabase } from './common';
 import * as fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
+import { refreshDatabase, getDatabase, saveDatabase } from './common';
+import { FileSystem, APIResponse } from 'src/interface/dbinterface';
 import { APP_CONSTANTS } from 'src/constants/app.constants';
-import { Logger } from '@nestjs/common';
+import { logger } from './logger';
+import { validateFileSystem } from './validators';
 
-let files: Files[] = [];
+let files: FileSystem[] = [];
 
-const setfiles = () => {
+const setFilesData = (): void => {
   refreshDatabase();
-  Logger.log('getting all files from database...');
+  logger.info('Getting all files from database...');
   const db = getDatabase(APP_CONSTANTS.DATABASES.FILESDB);
 
   if (db.success && db.data?.length) {
     try {
-      files = JSON.parse(db.data);
-      Logger.log('all files got from database...');
-    } catch (error) {
-      Logger.error(error.message);
+      if (typeof db.data == 'string') {
+        files = JSON.parse(db.data);
+      } else {
+        files = db.data;
+      }
+      logger.info('All files retrieved from database.');
+    } catch (error: any) {
+      logger.error('Error parsing database data');
+      logger.error(error.message);
     }
   }
 };
 
-const updatefiles = () => {
-  const updatedfiles = files;
-  saveDatabase(APP_CONSTANTS.DATABASES.FILESDB, updatedfiles);
-  setfiles();
+const updateFilesData = (): void => {
+  saveDatabase(APP_CONSTANTS.DATABASES.FILESDB, files);
+  setFilesData();
 };
 
-const setNewfiles = (data: Files) => {
+const setNewFileData = (data: FileSystem): APIResponse => {
+  const validationResponse = validateFileSystem(data);
+  if (!validationResponse.success) {
+    return validationResponse;
+  }
+  if (!isFileUnique(data.name, data.folderId)) {
+    logger.alert(
+      'File with the same name already exists in the parent directory.',
+    );
+    return {
+      success: false,
+      message:
+        'File with the same name already exists in the parent directory.',
+    };
+  }
+  setFilesData();
   files.push(data);
-  updatefiles();
+  updateFilesData();
+  logger.success('File added successfully');
+  return {
+    success: true,
+    message: 'File added successfully',
+  };
 };
 
-const isFileUnique = (filename: string, parentFolderId: string) =>
-  !files.find(
-    (file) => file.filename === filename && file.folder_id === parentFolderId,
+const isFileUnique = (filename: string, parentFolderId: string): boolean => {
+  setFilesData();
+  return !files.find(
+    (file) => file.name === filename && file.folderId === parentFolderId,
   );
+};
 
-const getFileById = (fileId: string) =>
-  files.find((file) => file._id === fileId);
+const getFileById = (fileId: string): FileSystem | undefined => {
+  setFilesData();
+  return files.find((file) => file._id === fileId);
+};
 
-const getFilesByAuthorId = (owner_id: string) =>
-  files.filter((file) => file.owner_id === owner_id);
+const getFilesByAuthorId = (ownerId: string): FileSystem[] => {
+  setFilesData();
+  return files.filter((file) => file.ownerId === ownerId);
+};
 
-const getFilesByFolderId = (folder_id: string) =>
-  files.filter((file) => file.folder_id === folder_id);
+const getFilesByFolderId = (folderId: string): FileSystem[] => {
+  setFilesData();
+  return files.filter((file) => file.folderId === folderId);
+};
 
-const getFilesByAuthorIdAndFolderId = (owner_id: string, folder_id: string) =>
-  files.filter(
-    (file) => file.owner_id === owner_id && file.folder_id === folder_id,
+const getFilesByAuthorIdAndFolderId = (
+  ownerId: string,
+  folderId: string,
+): FileSystem[] => {
+  setFilesData();
+  return files.filter(
+    (file) => file.ownerId === ownerId && file.folderId === folderId,
   );
+};
 
-const getTotalFileSizeByAuthorId = (owner_id: string) => {
-  const files = getFilesByAuthorId(owner_id);
-  const totalFileSize = files.reduce(
-    (accumulator, file) => accumulator + file.size,
-    0,
-  );
-  return totalFileSize;
+const getTotalFileSizeByAuthorId = (ownerId: string): number => {
+  const authorFiles = getFilesByAuthorId(ownerId);
+  return authorFiles.reduce((accumulator, file) => accumulator + file.size, 0);
 };
 
 const getTotalFileSizeByAuthorIdAndFolderId = (
-  owner_id: string,
-  folder_id: string,
-) => {
-  const files = getFilesByAuthorIdAndFolderId(owner_id, folder_id);
-  const totalFileSize = files.reduce(
+  ownerId: string,
+  folderId: string,
+): number => {
+  const authorFolderFiles = getFilesByAuthorIdAndFolderId(ownerId, folderId);
+  return authorFolderFiles.reduce(
     (accumulator, file) => accumulator + file.size,
     0,
   );
-  return totalFileSize;
 };
 
-const getFileList = () => {
-  setfiles();
+const getFileList = (): FileSystem[] => {
+  setFilesData();
   return files;
 };
 
-const deleteFileById = (fileId: string) => {
+const deleteFileById = (fileId: string): APIResponse => {
+  setFilesData();
   try {
-    const file = getFileById(fileId);
     const fileIndex = files.findIndex((file) => file._id === fileId);
     if (fileIndex !== -1) {
-      files.splice(fileIndex, 1);
-      updatefiles();
+      const deletedFile = files.splice(fileIndex, 1)[0];
+      updateFilesData();
+      fs.unlinkSync(deletedFile.path);
+      logger.success('File deleted successfully');
+      return {
+        success: true,
+        message: 'File deleted successfully',
+        data: deletedFile,
+      };
     } else {
+      logger.alert('File not found.');
       return { success: false, message: 'File not found' };
     }
-    file && fs.unlinkSync(file.path);
-    return { success: true, message: 'File deleted successfully' };
-  } catch (err) {
-    return { success: false, err: err.message };
+  } catch (err: any) {
+    logger.error('Error deleting file.');
+    logger.error(err.message);
+    return { success: false, message: err.message };
   }
 };
 
-const updateFileById = (fileId: string, newData: Files) => {
+const updateFileById = (fileId: string, newData: FileSystem): APIResponse => {
+  const validationResponse = validateFileSystem(newData);
+  if (!validationResponse.success) {
+    return validationResponse;
+  }
+  setFilesData();
   const fileIndex = files.findIndex((file) => file._id === fileId);
   if (fileIndex !== -1) {
+    if (
+      newData.name &&
+      newData.folderId &&
+      !isFileUnique(newData.name, newData.folderId)
+    ) {
+      logger.alert(
+        'File with the same name already exists in the parent directory.',
+      );
+      return {
+        success: false,
+        message:
+          'File with the same name already exists in the parent directory.',
+      };
+    }
     files[fileIndex] = { ...files[fileIndex], ...newData };
-    updatefiles();
+    updateFilesData();
+    logger.success('File updated successfully');
     return { success: true, message: 'File updated successfully' };
   } else {
+    logger.alert('File not found.');
     return { success: false, message: 'File not found' };
   }
 };
 
-const moveFileToAnotherFolder = (fileId: string, newFolderId: string) => {
+const moveFileToAnotherFolder = (
+  fileId: string,
+  newFolderId: string,
+): FileSystem | null => {
+  setFilesData();
   const fileIndex = files.findIndex((file) => file._id === fileId);
   if (fileIndex !== -1) {
-    files[fileIndex].folder_id = newFolderId;
-    updatefiles();
+    files[fileIndex].folderId = newFolderId;
+    updateFilesData();
     return files[fileIndex];
   }
   return null;
+};
+
+const copyFileToAnotherFolder = (
+  fileId: string,
+  newFolderId: string,
+): APIResponse => {
+  setFilesData();
+  const file = getFileById(fileId);
+  if (file) {
+    const newFile = { ...file, _id: uuidv4(), folderId: newFolderId };
+    setNewFileData(newFile);
+    logger.success('File copied successfully');
+    return {
+      success: true,
+      message: 'File copied successfully',
+      data: newFile,
+    };
+  } else {
+    logger.alert('File not found');
+    return { success: false, message: 'File not found' };
+  }
 };
 
 export {
@@ -124,8 +212,9 @@ export {
   getFileById,
   getFilesByFolderId,
   isFileUnique,
-  setNewfiles,
+  setNewFileData,
   deleteFileById,
   updateFileById,
   moveFileToAnotherFolder,
+  copyFileToAnotherFolder,
 };

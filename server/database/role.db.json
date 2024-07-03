@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "4e5c299e-57ab-4d6a-b89e-d8e2e3aa679a",
+    "name": "Administrator",
+    "permissions": {
+      "canCreateFile": true,
+      "canCreateFolder": true,
+      "canDeleteFile": true,
+      "canDeleteFolder": true,
+      "canViewFile": true,
+      "canViewFolder": true,
+      "canDownloadFile": true,
+      "canDownloadFolder": true,
+      "canRenameFile": true,
+      "canRenameFolder": true,
+      "canUploadFile": true,
+      "canUploadFolder": true
+    },
+    "createdAt": "2024-06-23T14:13:29+05:30",
+    "updatedAt": "2024-06-23T14:13:29+05:30"
+  }
+]

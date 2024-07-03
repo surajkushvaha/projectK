@@ -1,47 +1,35 @@
-export interface Files {
-  _id: string;
-  filename: string;
-  path: string;
-  size: number;
-  folder_id: string;
-  owner_id: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-}
-export interface Folder {
+export interface FolderSystem {
   _id: string;
   name: string;
-  owner_id: string;
-  parent_id: string | null;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
+  parent: string | null;
+  ownerId: string;
+  sharedWith: SharedWith[];
+  publicAccess: PublicAccess;
+  createdAt: string;
+  updatedAt: string;
 }
-export interface FileFolderRelationship {
-  _id: string;
-  file_id: string;
-  folder_id: string;
+
+export interface SharedWith {
+  userId?: string;
+  roleId?: string; // Reference to the role
 }
-export interface FolderPermission {
-  _id: string;
-  folder_id: string;
-  user_id: string;
-  can_read: boolean;
-  can_write: boolean;
-  can_delete: boolean;
-  created_at: string;
-  updated_at: string;
+
+export interface PublicAccess {
+  isPublic: boolean;
+  roleId?: string; // Reference to the role
 }
-export interface FilePermission {
+
+export interface FileSystem {
   _id: string;
-  file_id: number;
-  user_id: number;
-  can_read: boolean;
-  can_write: boolean;
-  can_delete: boolean;
-  created_at: string;
-  updated_at: string;
+  name: string;
+  folderId: string;
+  ownerId: string;
+  sharedWith: SharedWith[];
+  publicAccess: PublicAccess;
+  path: string;
+  size: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface User {
@@ -49,6 +37,38 @@ export interface User {
   username: string;
   email: string;
   password: string;
-  created_at: string;
-  updated_at: string;
+  roleId: string; // Reference to the role
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Role {
+  _id: string;
+  name: string;
+  permissions: Permissions;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Permissions {
+  canViewFolder: boolean;
+  canViewFile: boolean;
+  canCreateFolder: boolean;
+  canCreateFile: boolean;
+  canDeleteFolder: boolean;
+  canDeleteFile: boolean;
+  canRenameFolder: boolean;
+  canRenameFile: boolean;
+  canUploadFile: boolean;
+  canUploadFolder: boolean;
+  canDownloadFile: boolean;
+  canDownloadFolder: boolean;
+}
+
+export type PermissionKeys = keyof Permissions;
+
+export interface APIResponse {
+  success: boolean;
+  message: string;
+  data?: any;
 }
